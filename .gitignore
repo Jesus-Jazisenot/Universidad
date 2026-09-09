@@ -1,0 +1,13 @@
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Arduino
+*.hex
+*.elf
+build/
+
+# Temporales de ofimatica
+~$*
+*.tmp
