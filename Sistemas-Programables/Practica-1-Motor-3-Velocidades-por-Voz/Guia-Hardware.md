@@ -129,11 +129,16 @@ de la IP que te dio antes).
 
 ### El motor no gira
 
+> **Empieza por medir la batería.** Una LiPo baja pierde voltaje y sube su resistencia
+> interna, así que el motor arranca en el nivel 3 pero solo zumba en el 1. Parece un
+> problema de calibración del PWM y no lo es. A nosotros nos pasó y perdimos tiempo
+> ajustando el código antes de darnos cuenta.
+
 | Síntoma | Causa probable |
 |---|---|
 | No se mueve en ningún nivel | Falta unir los GND, o falta la fuente externa |
 | Solo gira a full | El jumper del ENA está puesto |
-| Zumba pero no arranca en "baja" | El PWM 130 del nivel 1 es muy bajo para ese motor. Súbelo en `PWM[]`, o alarga `ARRANQUE_MS` |
+| Zumba pero no arranca en "baja" | **Batería descargada.** Es la causa más común y la que nos costó encontrar. Mídela y cárgala antes de tocar el código |
 | El Arduino se reinicia al arrancar | Estás alimentando el motor desde el Arduino. Usa fuente aparte |
 
 ### La app dice "No te entendí"

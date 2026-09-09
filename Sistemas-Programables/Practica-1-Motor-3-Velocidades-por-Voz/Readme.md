@@ -23,9 +23,9 @@ El armado, la conexión a la red y la solución de problemas están en
   aplicada al pin de habilitación (ENA) de un puente H.
 - Controlar una carga inductiva de potencia desde un microcontrolador usando un L298N
   con fuente de alimentación independiente y tierra común.
-- Calibrar el arranque de un motorreductor: identificar que la fricción de la caja de
-  engranes impide el arranque por debajo de cierto PWM, y resolverlo con una patada de
-  arranque a plena potencia.
+- Diagnosticar por qué un motor no arranca a bajo PWM, distinguiendo una causa
+  mecánica de una eléctrica: en esta práctica el síntoma parecía fricción del
+  motorreductor, pero la causa real era la batería descargada.
 - Diseñar un protocolo HTTP donde el cliente envía estado absoluto en lugar de
   incrementos, para tolerar la pérdida de peticiones.
 - Validar rangos en la app (`if nivel < 3` / `if nivel > 0`) para evitar un índice
@@ -85,16 +85,32 @@ App móvil (MIT App Inventor): [Codigo/AppInventor](Codigo/AppInventor)
 | "retroceder" | Baja un escalón (piso en 0, avisa si ya está detenido) |
 | "alto" | Regresa a nivel 0 de golpe |
 
-### Patada de arranque
+### El motor no arrancaba a bajo PWM: causa real
 
-El motorreductor no vence la fricción de su caja de engranes por debajo de un PWM de
-aproximadamente 200. Si se le aplicara directamente el PWM 130 del nivel 1, el motor
-solo zumbaría sin girar.
+Durante las primeras pruebas el motor no giraba en el nivel 1 (PWM 130): solo zumbaba.
+La hipótesis inicial fue que el motorreductor no vencía la fricción de su caja de
+engranes por debajo de un PWM cercano a 200, y por eso se agregó una **patada de
+arranque** en `aplicarVelocidad()`: dar 255 durante 150 ms (`ARRANQUE_MS`) y luego bajar
+al valor del nivel.
 
-La solución en `aplicarVelocidad()` es dar **255 durante 150 ms** (`ARRANQUE_MS`) y
-después bajar al valor real del nivel. Una vez girando, la inercia y la menor fricción
-dinámica permiten sostener el giro con un PWM más bajo, lo que hace que las tres
-velocidades se distingan entre sí.
+**Esa hipótesis resultó equivocada.** Tiempo después se identificó que la causa era la
+**batería descargada**. Con la batería cargada, el motor arranca sin problema
+directamente con el PWM 130 del nivel 1.
+
+Por qué una batería baja produce justo ese síntoma:
+
+- Al descargarse, una LiPo baja su voltaje **y sube su resistencia interna**. Bajo la
+  corriente de arranque del motor, el voltaje se hunde todavía más.
+- El PWM no reduce el voltaje: lo entrega a pulsos. En el nivel 1 el motor recibe el
+  voltaje de la batería solo un 51 % del tiempo, así que el **par de arranque** es una
+  fracción del total.
+- Un par ya reducido por el PWM, aplicado sobre un voltaje ya caído, no alcanza a vencer
+  la fricción estática. En el nivel 3 (PWM 255, siempre encendido) sí alcanzaba, y por
+  eso el fallo parecía depender del nivel y no de la alimentación.
+
+La patada de arranque se dejó en el código porque no estorba y da margen si la batería
+va a media carga, pero **ya no es la solución al problema**: la solución es cargar la
+batería. Antes de tocar `PWM[]` o `ARRANQUE_MS`, hay que medir el voltaje de la LiPo.
 
 ## Video del funcionamiento
 
@@ -120,9 +136,14 @@ Incluye:
 
 <!-- PENDIENTE: redactar. Puntos que conviene tocar, salidos de la práctica real: -->
 <!--                                                                              -->
-<!-- - El PWM no controla voltaje sino tiempo encendido; el motorreductor no       -->
-<!--   arranca por debajo de ~200 por la fricción de la caja de engranes, pero sí  -->
-<!--   se sostiene girando con valores más bajos. De ahí la patada de arranque.    -->
+<!-- - El diagnóstico equivocado: el motor no arrancaba en el nivel 1 y se        -->
+<!--   atribuyó a la fricción del motorreductor, cuando la causa era la batería    -->
+<!--   descargada. Se corrigió el síntoma (patada de arranque) antes de encontrar  -->
+<!--   la causa. Vale la pena decir cómo se descubrió y qué se aprendió de eso:    -->
+<!--   descartar primero la alimentación antes de calibrar el código.              -->
+<!-- - El PWM no baja el voltaje, lo entrega a pulsos. Por eso una batería caída   -->
+<!--   se nota solo en los niveles bajos: el par de arranque es una fracción del   -->
+<!--   total y ya no alcanza a vencer la fricción estática.                        -->
 <!-- - Por qué mandar el nivel absoluto y no incrementos: tolera peticiones        -->
 <!--   perdidas sin que la pantalla y el motor se desincronicen.                   -->
 <!-- - La tierra común y el jumper del ENA: dos fallas que no dan ningún error     -->

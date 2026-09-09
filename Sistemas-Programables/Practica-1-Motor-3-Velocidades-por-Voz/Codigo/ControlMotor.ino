@@ -25,12 +25,16 @@
       OUT1 y OUT2  ->  las dos terminales del motorreductor
 
   NOTAS DE CALIBRACION
-    Este motorreductor no arranca por debajo de PWM 200 por la
-    friccion de su caja de engranes. Por eso se usa una patada
-    de arranque: se le da 255 durante 150 ms y luego baja al
-    valor del nivel. Ya girando, se sostiene con PWM mas bajo.
+    La patada de arranque (255 durante ARRANQUE_MS y luego el valor
+    del nivel) se agrego cuando el motor no arrancaba en el nivel 1.
 
-    Si tu motor es distinto, ajusta PWM[] y ARRANQUE_MS.
+    OJO: la causa real de eso NO era el motor, era la bateria
+    descargada. Con la bateria cargada arranca directo con PWM 130.
+    La patada se dejo porque da margen si la bateria va a media
+    carga, pero no es la solucion al problema.
+
+    Si el motor no arranca: mide primero el voltaje de la bateria.
+    Solo despues de descartarla, ajusta PWM[] y ARRANQUE_MS.
 */
 
 #include <WiFiS3.h>
