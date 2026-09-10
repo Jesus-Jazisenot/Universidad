@@ -63,10 +63,18 @@ Dos errores que impiden que funcione:
 
 <img src="Diagrama/conexion-motor.svg" width="600">
 
+Vista realista de la misma conexión, con las notas de los jumpers del módulo y del
+pin 9 (debe ser un pin PWM `~`):
+
+<img src="Diagrama/conexion-motor-ilustrado.jpg" width="700">
+
 ## Código
 [ControlMotor.ino](Codigo/ControlMotor.ino)
 
 App móvil (MIT App Inventor): [Codigo/AppInventor](Codigo/AppInventor)
+(ahí están las capturas del Designer y de los bloques)
+
+<img src="Codigo/AppInventor/designer.jpg" width="700">
 
 ### Rutas HTTP y niveles
 
@@ -121,8 +129,18 @@ batería. Antes de tocar `PWM[]` o `ARRANQUE_MS`, hay que medir el voltaje de la
 
 ## Evidencias de armado
 
-<!-- PENDIENTE: falta la foto del circuito armado (Arduino + L298N + motor + batería) -->
+Circuito completo: Arduino UNO R4 WiFi, L298N y motorreductor sobre la mesa de trabajo.
+
 <img src="Diagrama/armado.jpg" width="500">
+
+| Arduino UNO R4 WiFi | L298N energizado |
+|---|---|
+| <img src="Diagrama/armado-arduino.jpg" width="330"> | <img src="Diagrama/armado-l298n.jpg" width="330"> |
+| Los cables salen de los pines **9**, **8**, **7** y **GND** | El LED rojo indica que la LiPo está alimentando el módulo |
+
+Motorreductor con la llanta montada, la carga que mueve el circuito:
+
+<img src="Diagrama/armado-motorreductor.jpg" width="330">
 
 ## Reporte
 [Reporte de la practica.pdf](Reporte/Reporte%20de%20la%20practica.pdf)

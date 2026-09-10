@@ -32,6 +32,10 @@ te la dice por voz y la muestra en pantalla.
 
 En `Screen1`: AppName = **ControlMotor**, Title = **Velocidad del motor**, AlignHorizontal = **Center**
 
+Así queda el Designer con los 7 componentes:
+
+<img src="designer.jpg" width="800">
+
 ---
 
 ## 3. Blocks
@@ -86,6 +90,13 @@ do
 `join` está en **Text** — puedes agregarle más huecos con el engranaje azul ⚙.
 El bloque `+` está en **Math**.
 
+Los bloques A, B y C ya armados:
+
+<img src="bloques-variables-actualizar.jpg" width="800">
+
+En la captura las globales ya están apuntando al Arduino real: `ip` con la IP que
+salió en el Monitor Serie y `conectado` en **true** (ver la sección 5).
+
 ---
 
 ### Bloque D — los comandos de voz
@@ -117,6 +128,8 @@ do
 ```
 
 Los bloques `<` y `>` están en **Math**.
+
+<img src="bloques-comandos-voz.jpg" width="800">
 
 > El `if` de adentro es lo que impide que se pase de 3 o baje de 0.
 > Sin eso, `select list item` truena con un índice fuera de rango.
