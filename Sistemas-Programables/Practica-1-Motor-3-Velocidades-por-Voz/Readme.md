@@ -145,8 +145,9 @@ Motorreductor con la llanta montada, la carga que mueve el circuito:
 [Reporte de la practica.pdf](Reporte/Reporte%20de%20la%20practica.pdf)
 
 Incluye:
-- Tabla de los tres niveles: PWM aplicado contra velocidad observada
-- Capturas del Monitor Serie mostrando nivel y PWM en cada comando
+- Datos generales, objetivo, tabla de conexiones y procedimiento
+- Tabla de los tres niveles: PWM aplicado, ciclo de trabajo y velocidad observada
+- Salida del Monitor Serie mostrando nivel y PWM en cada comando
 - Observaciones sobre el comportamiento del sistema
 
 ## Conclusiones
@@ -171,8 +172,8 @@ Incluye:
 ## Resultados
 [Resultados.pdf](Resultados/Resultados.pdf)
 
-Este documento contiene la descripción de la práctica, objetivos y procedimientos realizados.
+Resultados obtenidos en la práctica:
 
-- Reporte técnico estilo IEEE (PDF)
-- Tabla PWM contra velocidad de los tres niveles
-- Capturas del Monitor Serie
+- Lo que se observó del sistema en cada nivel y con cada comando de voz
+- Tabla PWM contra velocidad observada de los tres niveles
+- Salida del Monitor Serie
