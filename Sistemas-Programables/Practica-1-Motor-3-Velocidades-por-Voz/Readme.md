@@ -61,10 +61,8 @@ Dos errores que impiden que funcione:
 
 ## Diagrama del circuito
 
-<img src="Diagrama/conexion-motor.svg" width="600">
-
-Vista realista de la misma conexión, con las notas de los jumpers del módulo y del
-pin 9 (debe ser un pin PWM `~`):
+Conexión Arduino UNO R4 WiFi / L298N / motorreductor / batería, con las notas de los
+jumpers del módulo y del pin 9 (debe ser un pin PWM `~`):
 
 <img src="Diagrama/conexion-motor-ilustrado.jpg" width="700">
 
