@@ -124,8 +124,9 @@ batería. Antes de tocar `PWM[]` o `ARRANQUE_MS`, hay que medir el voltaje de la
 
 [Readme](Video/Readme.txt)
 
-<!-- PENDIENTE: pegar el enlace cuando el video esté subido -->
-[Ver video en YouTube]()
+[Ver video en YouTube](https://youtu.be/qG1_gLGx5YU)
+
+[![Video del funcionamiento](https://img.youtube.com/vi/qG1_gLGx5YU/hqdefault.jpg)](https://youtu.be/qG1_gLGx5YU)
 
 ## Evidencias de armado
 
