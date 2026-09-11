@@ -1,0 +1,7 @@
+# Archivos binarios: nunca convertir finales de linea
+*.pdf binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.aia binary
+*.mp4 binary
