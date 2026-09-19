@@ -26,7 +26,7 @@ forma independiente sin bloquear el programa.
 El diagrama muestra los tres LEDs conectados a los pines 8, 9 y 10 con resistencia a
 GND; es el mismo circuito para las dos partes.
 
-[Ver carpeta Diagrama](Diagrama/)
+![Diagrama de conexión](Diagrama/diagrama-3-leds.png)
 
 ## Código
 Dos programas sobre el mismo circuito: uno con `delay()` (antipatrón) y otro con
@@ -46,8 +46,6 @@ del Monitor Serie y las conclusiones técnicas.
 Con `delay()` los LEDs quedaron encadenados en una sola secuencia de 6 s sin cumplir
 sus periodos; con `millis()` cada LED cumplió su ritmo de forma independiente,
 incluso con varios encendidos a la vez.
-
-[Ver Resultados](Resultados/Resultados-Comparacion-delay-vs-millis.pdf)
 
 ## Video
 El video muestra el parpadeo de los LEDs con `delay()` y con `millis()`.

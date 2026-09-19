@@ -28,7 +28,7 @@ incrementos) por HTTP, y el Arduino aplica el PWM correspondiente.
 El diagrama muestra la conexión entre el Arduino UNO R4 WiFi, el L298N, el
 motorreductor y la batería LiPo, indicando la tierra común y la fuente externa.
 
-[Ver carpeta Diagrama](Diagrama/)
+![Diagrama de conexión](Diagrama/conexion-motor-ilustrado.jpg)
 
 ## Código
 El programa recibe el nivel de velocidad por HTTP (`/vel/0` a `/vel/3`) y lo traduce
@@ -48,8 +48,6 @@ evidencia y las conclusiones técnicas de la práctica.
 El motor respondió correctamente a los tres niveles de PWM y a los comandos de voz.
 También se documentó el caso en que el motor no arrancaba en el nivel 1, causado por
 una batería descargada y no por fricción mecánica.
-
-[Ver Resultados](Resultados/Resultados.pdf)
 
 ## Video
 El video muestra el funcionamiento del control de velocidad por voz sobre el

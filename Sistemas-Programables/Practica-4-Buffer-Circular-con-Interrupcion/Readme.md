@@ -27,7 +27,7 @@ El diagrama muestra el pulsador conectado al pin 2 (`INPUT_PULLUP`, interrupció
 `FALLING`); la matriz de LEDs está integrada en la placa y no requiere cableado
 externo.
 
-[Ver carpeta Diagrama](Diagrama/)
+![Diagrama de conexión](Diagrama/diagrama-tinkercad.jpg)
 
 ## Código
 La ISR anota el instante (`millis()`) de cada pulsación en un buffer circular de 8
@@ -46,8 +46,6 @@ medidos, la captura del Monitor Serie y las conclusiones técnicas.
 Se registraron 80 pulsaciones sin saltos ni repeticiones, incluida una ráfaga de 7
 pulsaciones en 1.4 s. El contador de pérdidas se mantuvo en 0 en todas las pruebas y
 la animación de la matriz no se detuvo en ningún momento.
-
-[Ver Resultados](Resultados/Resultados-Buffer-Circular-ISR.pdf)
 
 ## Video
 El video muestra el conteo de piezas por interrupción y la animación continua en la

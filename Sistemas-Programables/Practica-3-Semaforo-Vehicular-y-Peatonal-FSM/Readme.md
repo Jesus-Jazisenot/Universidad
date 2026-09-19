@@ -28,7 +28,7 @@ hace con `millis()`, sin usar `delay()`.
 El diagrama muestra las conexiones del semáforo vehicular (pines 11/12/13), el
 semáforo peatonal (pines 7/8) y el pulsador (pin 2, `INPUT_PULLUP`).
 
-[Ver carpeta Diagrama](Diagrama/)
+![Diagrama de conexión](Diagrama/diagrama-semaforo-fsm.png)
 
 ## Código
 El programa modela los cuatro estados del semáforo en un `enum class` y controla las
@@ -47,8 +47,6 @@ pruebas, la salida del Monitor Serie y las conclusiones técnicas.
 El ciclo vehicular (6/2/5 s) corrió de forma autónoma y la solicitud peatonal se
 atendió únicamente al llegar al rojo, sin importar en qué momento se presionara el
 botón durante el verde o el amarillo.
-
-[Ver Resultados](Resultados/Resultados-Semaforo-FSM.pdf)
 
 ## Video
 El video muestra el ciclo del semáforo vehicular y la atención de la solicitud

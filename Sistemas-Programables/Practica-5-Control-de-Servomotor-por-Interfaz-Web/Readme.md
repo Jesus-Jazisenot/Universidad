@@ -28,7 +28,7 @@ El servomotor va en el pin 9 (señal); su alimentación viene de una fuente exte
 de 5-6 V, nunca del pin 5V del Arduino, con tierra común entre Arduino, fuente y
 servo.
 
-[Ver carpeta Diagrama](Diagrama/)
+![Diagrama de conexión](Diagrama/diagrama-conexion.png)
 
 ## Código
 El programa levanta un servidor HTTP en el puerto 80. Al recibir
@@ -48,8 +48,6 @@ conclusiones técnicas.
 El servo respondió a los tres botones (0°/90°/180°) y al slider en tiempo real; se
 registró también un primer intento de conexión fallido seguido de una reconexión
 exitosa. Resultados cualitativos (video y Monitor Serie), sin medición instrumentada.
-
-[Ver Resultados](Resultados/Resultados-Control-Servo-Web.pdf)
 
 ## Video
 El video muestra el servomotor respondiendo a la interfaz web en tiempo real.
