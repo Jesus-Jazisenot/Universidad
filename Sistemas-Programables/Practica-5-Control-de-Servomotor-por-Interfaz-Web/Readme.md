@@ -45,8 +45,11 @@ conclusiones técnicas.
 [Ver Reporte](Reporte/Reporte-Control-Servo-Web.pdf)
 
 ## Resultados
-**PENDIENTE:** medir el ángulo alcanzado contra el pedido y el tiempo de respuesta
-de la interfaz. Ver [Resultados/Readme.txt](Resultados/Readme.txt).
+El servo respondió a los tres botones (0°/90°/180°) y al slider en tiempo real; se
+registró también un primer intento de conexión fallido seguido de una reconexión
+exitosa. Resultados cualitativos (video y Monitor Serie), sin medición instrumentada.
+
+[Ver Resultados](Resultados/Resultados-Control-Servo-Web.pdf)
 
 ## Video
 El video muestra el servomotor respondiendo a la interfaz web en tiempo real.
@@ -63,3 +66,8 @@ El debounce de 40 ms en el slider evita mandar una petición HTTP por cada pixel
 arrastrado; solo se manda la posición final. Los botones, en cambio, mandan la
 petición de inmediato porque representan una sola decisión del usuario, no un
 arrastre continuo.
+
+En la prueba real el primer intento de conexión a la red falló y el programa
+reintentó solo hasta conectarse, imprimiendo la IP asignada en cuanto lo logró: el
+bucle de reintentos con límite (`intentos < 40`) hizo innecesario reprogramar la
+placa por una falla de red pasajera.
