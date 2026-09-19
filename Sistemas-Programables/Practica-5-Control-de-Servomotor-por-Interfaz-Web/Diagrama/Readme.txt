@@ -1,11 +1,13 @@
 Diagrama del circuito.
 
-Conexion prevista:
-  Servomotor   señal al pin 9 (PWM) del Arduino UNO R4 WiFi
-  Servomotor   alimentacion e VCC/GND: si el servo es grande (tipo MG996R) usar
-               fuente externa 5-6 V, NUNCA el 5V del Arduino, con tierra comun
-               entre la fuente y el Arduino.
+  diagrama-conexion.png  - Arduino UNO R4 WiFi + servomotor MG996R. Senal (naranja)
+                           del pin 9 al servo; alimentacion (rojo) desde una fuente
+                           externa de 5-6 V (4xAA o powerbank), nunca del pin 5V del
+                           Arduino; tierra comun (negro) entre Arduino, fuente y
+                           servo.   [LISTO]
 
-PENDIENTE: armar el circuito y subir aqui el esquema (Tinkercad o Fritzing) con la
-fuente externa y la tierra comun marcadas, siguiendo el mismo estilo que las
-practicas anteriores.
+Conexion:
+  Servo senal    pin 9 (PWM) del Arduino
+  Servo VCC      fuente externa 5-6 V (NO el 5V del Arduino: el MG996R consume mas
+                 corriente de la que el pin puede entregar)
+  Servo GND      mismo nodo que GND del Arduino y GND de la fuente externa

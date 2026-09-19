@@ -3,54 +3,63 @@ Control de un servomotor mediante una interfaz web
 
 ## Descripción
 Un Arduino UNO R4 WiFi levanta un servidor web que sirve una página con un control
-deslizante (slider). Al mover el slider desde el navegador, el Arduino recibe el
-ángulo pedido por HTTP y mueve el servomotor a esa posición en tiempo real, sin
-recargar la página.
+deslizante y tres botones de posición fija (0°, 90°, 180°). Al usarlos desde el
+navegador, el Arduino recibe el ángulo pedido por HTTP (`/set?a=NN`) y mueve el
+servomotor de inmediato, sin recargar la página.
 
 ## Objetivos
 - Levantar un servidor HTTP en un microcontrolador con Wi-Fi integrado.
 - Construir una interfaz web simple (HTML + JavaScript) sin depender de un
   servidor externo.
 - Controlar la posición de un servomotor a partir de un valor recibido por HTTP.
-- Actualizar el control en tiempo real sin recargar la página (`fetch`).
+- Actualizar el control en tiempo real sin recargar la página (`fetch`), con un
+  pequeño debounce para no saturar la red al arrastrar el slider.
 
 ## Herramientas y material utilizado
 - Arduino UNO R4 WiFi
-- Servomotor
+- Servomotor MG996R
+- Fuente externa 5-6 V (4×AA o powerbank) para el servo
 - Protoboard y cables Dupont
-- Fuente externa para el servomotor (si es de torque alto, tipo MG996R)
 - Arduino IDE, librería `WiFiS3` (incluida en el core) y librería `Servo`
   (se instala aparte, ver [Codigo/Readme.txt](Codigo/Readme.txt))
 
 ## Diagrama
-El servomotor va en el pin 9 (PWM); si requiere más corriente de la que da el
-Arduino, se alimenta con fuente externa y tierra común.
-
-**PENDIENTE:** falta armar el circuito y subir el esquema. Ver
-[Diagrama/Readme.txt](Diagrama/Readme.txt).
+El servomotor va en el pin 9 (señal); su alimentación viene de una fuente externa
+de 5-6 V, nunca del pin 5V del Arduino, con tierra común entre Arduino, fuente y
+servo.
 
 [Ver carpeta Diagrama](Diagrama/)
 
 ## Código
 El programa levanta un servidor HTTP en el puerto 80. Al recibir
-`GET /servo?angulo=NN`, mueve el servo a ese ángulo y responde con la página que
-contiene el slider. Compilado y verificado con `arduino-cli` para la placa
-`arduino:renesas_uno:unor4wifi` (24 % de memoria de programa); falta la prueba en
-hardware real.
+`GET /set?a=NN`, mueve el servo a ese ángulo y responde; la página con el slider y
+los botones va guardada en `PROGMEM`. Compilado y probado con el circuito real (ver
+video).
 
 [Ver código](Codigo/ControlServoWeb.ino)
 
 ## Reporte
-**PENDIENTE:** subir el PDF con metodología, capturas de la interfaz web
-funcionando y conclusiones técnicas. Ver [Reporte/Readme.txt](Reporte/Readme.txt).
+El reporte contiene la metodología, capturas de la interfaz en 0°/90°/180° y
+conclusiones técnicas.
+
+[Ver Reporte](Reporte/Reporte-Control-Servo-Web.pdf)
 
 ## Resultados
-**PENDIENTE:** documentar el ángulo alcanzado contra el pedido y el tiempo de
-respuesta de la interfaz. Ver [Resultados/Readme.txt](Resultados/Readme.txt).
+**PENDIENTE:** medir el ángulo alcanzado contra el pedido y el tiempo de respuesta
+de la interfaz. Ver [Resultados/Readme.txt](Resultados/Readme.txt).
 
 ## Video
-**PENDIENTE:** grabar el video del servomotor respondiendo a la interfaz web. Ver
-[Video/Readme.txt](Video/Readme.txt).
+El video muestra el servomotor respondiendo a la interfaz web en tiempo real.
+
+[Ver video](https://youtube.com/shorts/U4AMvonls_c) · [Ver carpeta Video](Video/)
 
 ## Conclusiones
-**PENDIENTE:** redactar una vez armado y probado el circuito.
+Servir la interfaz desde el propio Arduino evita depender de una app o un servidor
+externo: el mismo microcontrolador controla el servomotor y sirve la página que lo
+opera, y basta con estar en la misma red Wi-Fi para usarla desde cualquier
+navegador.
+
+El debounce de 40 ms en el slider evita mandar una petición HTTP por cada pixel
+arrastrado; solo se manda la posición final. Los botones, en cambio, mandan la
+petición de inmediato porque representan una sola decisión del usuario, no un
+arrastre continuo.

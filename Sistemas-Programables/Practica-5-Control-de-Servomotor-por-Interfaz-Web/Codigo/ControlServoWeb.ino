@@ -1,105 +1,121 @@
-/*
-  Practica 5 - Control de un servomotor mediante una interfaz web
-  Arduino UNO R4 WiFi + servomotor en el pin 9.
-
-  El Arduino levanta un servidor HTTP simple. La pagina que sirve tiene un control
-  deslizante (slider); al moverlo, el navegador manda GET /servo?angulo=NN por
-  fetch (sin recargar la pagina) y el Arduino mueve el servo a ese angulo en
-  tiempo real.
-*/
-
 #include <WiFiS3.h>
 #include <Servo.h>
 
-const char* ssid = "NOMBRE_DE_TU_RED";
-const char* password = "CONTRASENA_DE_TU_RED";
+// ---------- CAMBIA ESTO ----------
+const char* SSID = "NOMBRE_DE_TU_WIFI";
+const char* PASS = "TU_PASSWORD";
+// ---------------------------------
 
 const int PIN_SERVO = 9;
 
-WiFiServer server(80);
-Servo servoMotor;
-int anguloActual = 90;
+Servo servo;
+WiFiServer servidor(80);
 
-void enviarPagina(WiFiClient &client) {
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println("Connection: close");
-  client.println();
+int angulo = 90;
 
-  client.println("<!DOCTYPE html><html><head><meta charset='utf-8'>");
-  client.println("<meta name='viewport' content='width=device-width, initial-scale=1'>");
-  client.println("<title>Control de Servomotor</title></head><body>");
-  client.println("<h1>Control de Servomotor por Interfaz Web</h1>");
-  client.print("<p>Angulo actual: <span id='valor'>");
-  client.print(anguloActual);
-  client.println("</span> grados</p>");
-  client.print("<input type='range' min='0' max='180' value='");
-  client.print(anguloActual);
-  client.println("' id='slider' style='width:300px'>");
-
-  // Al mover el slider se manda la peticion sin recargar la pagina.
-  client.println("<script>");
-  client.println("const slider = document.getElementById('slider');");
-  client.println("const valor = document.getElementById('valor');");
-  client.println("slider.addEventListener('input', () => {");
-  client.println("  valor.textContent = slider.value;");
-  client.println("  fetch('/servo?angulo=' + slider.value);");
-  client.println("});");
-  client.println("</script>");
-  client.println("</body></html>");
-}
+const char PAGINA[] PROGMEM = R"HTML(
+<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Control de servo</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#1c1c1a;color:#eee;
+     display:flex;flex-direction:column;align-items:center;
+     justify-content:center;height:100vh;margin:0}
+h1{font-size:20px;font-weight:500}
+#val{font-size:64px;font-weight:600;margin:10px 0}
+input[type=range]{width:80%;max-width:400px;height:40px}
+.btns{margin-top:24px}
+button{font-size:16px;padding:10px 20px;margin:4px;border:0;
+       border-radius:6px;background:#3a3a38;color:#eee}
+button:active{background:#5a5a58}
+</style></head><body>
+<h1>Angulo del servo</h1>
+<div id="val">90&deg;</div>
+<input type="range" id="sl" min="0" max="180" value="90">
+<div class="btns">
+  <button onclick="ir(0)">0&deg;</button>
+  <button onclick="ir(90)">90&deg;</button>
+  <button onclick="ir(180)">180&deg;</button>
+</div>
+<script>
+const sl=document.getElementById('sl'),val=document.getElementById('val');
+let t=null;
+function mandar(a){fetch('/set?a='+a);}
+function ir(a){sl.value=a;val.textContent=a+'°';mandar(a);}
+sl.addEventListener('input',()=>{
+  val.textContent=sl.value+'°';
+  clearTimeout(t);
+  t=setTimeout(()=>mandar(sl.value),40);
+});
+</script></body></html>
+)HTML";
 
 void setup() {
   Serial.begin(9600);
+  while (!Serial && millis() < 3000);
 
-  servoMotor.attach(PIN_SERVO);
-  servoMotor.write(anguloActual);
+  servo.attach(PIN_SERVO);
+  servo.write(angulo);
 
-  WiFi.begin(ssid, password);
-  Serial.print("Conectando a ");
-  Serial.println(ssid);
-  while (WiFi.status() != WL_CONNECTED) {
+  Serial.print("\nConectando a ");
+  Serial.println(SSID);
+
+  WiFi.begin(SSID, PASS);
+
+  int intentos = 0;
+  while (WiFi.status() != WL_CONNECTED && intentos < 40) {
     delay(500);
     Serial.print(".");
+    intentos++;
   }
-  Serial.println();
-  Serial.print("Conectado. Abre esta direccion en el navegador: http://");
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\nNO SE PUDO CONECTAR");
+    Serial.println("Revisa nombre, password, y que la red sea de 2.4 GHz");
+    return;
+  }
+
+  Serial.println("\nConectado");
+  Serial.print(">>> ABRE ESTA DIRECCION EN EL NAVEGADOR:  http://");
   Serial.println(WiFi.localIP());
 
-  server.begin();
+  servidor.begin();
 }
 
 void loop() {
-  WiFiClient client = server.available();
-  if (!client) return;
+  WiFiClient cliente = servidor.available();
+  if (!cliente) return;
 
-  String lineaActual = "";
-  String primeraLinea = "";
+  String peticion = cliente.readStringUntil('\n');
+  while (cliente.available()) cliente.read();
 
-  while (client.connected()) {
-    if (client.available()) {
-      char c = client.read();
-      if (c == '\n') {
-        if (primeraLinea.length() == 0) primeraLinea = lineaActual;
-        if (lineaActual.length() == 0) break;  // linea en blanco: fin de encabezados
-        lineaActual = "";
-      } else if (c != '\r') {
-        lineaActual += c;
-      }
+  int pos = peticion.indexOf("/set?a=");
+
+  if (pos >= 0) {
+    int valor = peticion.substring(pos + 7).toInt();
+
+    if (valor >= 0 && valor <= 180) {
+      angulo = valor;
+      servo.write(angulo);
+      Serial.print("Angulo: ");
+      Serial.println(angulo);
     }
+
+    cliente.println("HTTP/1.1 200 OK");
+    cliente.println("Content-Type: text/plain");
+    cliente.println("Connection: close");
+    cliente.println();
+    cliente.println(angulo);
+  }
+  else {
+    cliente.println("HTTP/1.1 200 OK");
+    cliente.println("Content-Type: text/html");
+    cliente.println("Connection: close");
+    cliente.println();
+    cliente.print(PAGINA);
   }
 
-  // La peticion del slider llega como: GET /servo?angulo=120 HTTP/1.1
-  int idx = primeraLinea.indexOf("angulo=");
-  if (idx != -1) {
-    int fin = primeraLinea.indexOf(' ', idx);
-    String valor = primeraLinea.substring(idx + 7, fin);
-    anguloActual = constrain(valor.toInt(), 0, 180);
-    servoMotor.write(anguloActual);
-    Serial.print("Angulo recibido: ");
-    Serial.println(anguloActual);
-  }
-
-  enviarPagina(client);
-  client.stop();
+  delay(5);
+  cliente.stop();
 }
