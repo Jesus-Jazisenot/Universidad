@@ -54,8 +54,7 @@ esto corriendo la simulación completa en Tinkercad (capturas pendientes, ver
 [Terminal/Readme.txt](Terminal/Readme.txt)).
 
 ## Video
-[Ver carpeta Video](Video/) — PENDIENTE: grabar la simulación corriendo en
-Tinkercad.
+[Ver video](https://youtu.be/-maYry-BLSA) · [Ver carpeta Video](Video/)
 
 ## Conclusiones
 El bus I2C comunica varios dispositivos con solo dos líneas (SDA y SCL) más
