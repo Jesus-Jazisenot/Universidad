@@ -50,7 +50,7 @@ R4 WiFi, el diagrama de conexión y las conclusiones técnicas.
 esclavo reportó "no responde"), pero el Monitor Serie mostraba valores
 imposibles del potenciómetro, del orden de `Potenciometro: 20548 -> servo a
 23 grados` (el máximo real es 1023), y el servo brincaba a ángulos sin
-relación con la perilla. Causa: el esclavo 3 hacía `analogRead()` dentro de
+relación con la perilla. Causa probable: el esclavo 3 hacía `analogRead()` dentro de
 `onRequest`, que en la R4 corre dentro de la interrupción del I2C, y mandaba
 los 2 bytes por separado; el maestro recibía bytes basura.
 
