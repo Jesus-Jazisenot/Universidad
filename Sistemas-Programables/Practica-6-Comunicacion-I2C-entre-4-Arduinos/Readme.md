@@ -57,8 +57,13 @@ los 2 bytes por separado; el maestro recibía bytes basura.
 **Corrección:** el esclavo 3 ahora lee el potenciómetro en `loop()` y
 responde con un valor ya listo en un solo `Wire.write(datos, 2)`; el maestro
 descarta cualquier valor mayor a 1023 ("Dato invalido") en vez de mandarlo
-al servo. PENDIENTE: volver a correrlo en físico y capturar el Monitor Serie
-(ver [Terminal/Readme.txt](Terminal/Readme.txt)).
+al servo.
+
+**Corrida con el código corregido: funciona.** El Monitor Serie reporta
+valores dentro de rango y el ángulo correcto para cada uno (307 → 54°,
+0 → 0°, 818 → 143°, 1023 → 180°), sin datos inválidos.
+
+![Monitor Serie con el código corregido](Terminal/monitor-serie-codigo-corregido.jpeg)
 
 ## Video
 [Ver video](https://youtu.be/-maYry-BLSA) · [Ver carpeta Video](Video/)
