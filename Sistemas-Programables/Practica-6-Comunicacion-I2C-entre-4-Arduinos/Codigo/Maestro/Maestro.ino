@@ -38,6 +38,15 @@ void loop() {
       byte alto = Wire.read();
       byte bajo = Wire.read();
       int valor = (alto << 8) | bajo;  // 0 a 1023
+
+      // Un potenciometro nunca pasa de 1023: si llega algo mayor es ruido en
+      // el bus (faltan pull-ups, GND no comun, el servo metiendo ruido...).
+      // Se reporta y NO se manda al servo, para que no brinque.
+      if (valor > 1023) {
+        Serial.print("Dato invalido del esclavo 3: ");
+        Serial.println(valor);
+        return;
+      }
       byte angulo = map(valor, 0, 1023, 0, 180);
 
       Wire.beginTransmission(DIR_SERVO);

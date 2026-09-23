@@ -6,8 +6,8 @@ Un Arduino maestro se comunica por el bus I2C (líneas SDA/SCL, tierra común)
 con tres Arduinos esclavos, cada uno con su propia dirección (0x08, 0x09,
 0x0A): el esclavo 1 prende/apaga un LED por orden del maestro, el esclavo 2
 mueve un servomotor al ángulo que el maestro le manda, y el esclavo 3 lee un
-potenciómetro y se lo entrega al maestro cuando este lo pide. Simulado en
-Tinkercad con 4× Arduino UNO R4 WiFi.
+potenciómetro y se lo entrega al maestro cuando este lo pide. Armado en
+físico con 4× Arduino UNO R4 WiFi.
 
 ## Objetivos
 - Comprender el funcionamiento del bus I2C entre un maestro y varios esclavos.
@@ -17,11 +17,11 @@ Tinkercad con 4× Arduino UNO R4 WiFi.
 - Detectar cuándo un esclavo no responde en vez de que el programa se cuelgue.
 
 ## Herramientas y material utilizado
-- 4× Arduino UNO R4 WiFi (simulados en Tinkercad)
-- 1 protoboard, 1 LED + resistencia de 470 Ω, 1 micro servo, 1 potenciómetro
+- 4× Arduino UNO R4 WiFi
+- 1 protoboard, 1 LED + resistencia de 470 Ω, 1 servomotor MG996R, 1 potenciómetro
 - Librerías `Wire` y `Servo` (incluidas en el entorno de Arduino, `Servo` se
   instala aparte para el core de la R4)
-- Tinkercad y Monitor Serie
+- Arduino IDE y Monitor Serie
 
 ## Diagrama
 Las cuatro placas comparten SDA (A4), SCL (A5) y tierra (GND); el maestro es
@@ -46,12 +46,19 @@ R4 WiFi, el diagrama de conexión y las conclusiones técnicas.
 [Ver Reporte](Reporte/Reporte-Comunicacion-I2C.pdf)
 
 ## Resultados
-Diseño verificado por compilación (los 4 programas compilan para
-`arduino:renesas_uno:unor4wifi`) y por lectura del código: el maestro debe
-reportar el valor del potenciómetro y el ángulo enviado cada 500 ms, mover el
-servo en tiempo real y prender/apagar el LED al escribir 1/0. Falta corroborar
-esto corriendo la simulación completa en Tinkercad (capturas pendientes, ver
-[Terminal/Readme.txt](Terminal/Readme.txt)).
+**Primera corrida (ver video): falló.** El bus sí comunicaba (ningún
+esclavo reportó "no responde"), pero el Monitor Serie mostraba valores
+imposibles del potenciómetro, del orden de `Potenciometro: 20548 -> servo a
+23 grados` (el máximo real es 1023), y el servo brincaba a ángulos sin
+relación con la perilla. Causa: el esclavo 3 hacía `analogRead()` dentro de
+`onRequest`, que en la R4 corre dentro de la interrupción del I2C, y mandaba
+los 2 bytes por separado; el maestro recibía bytes basura.
+
+**Corrección:** el esclavo 3 ahora lee el potenciómetro en `loop()` y
+responde con un valor ya listo en un solo `Wire.write(datos, 2)`; el maestro
+descarta cualquier valor mayor a 1023 ("Dato invalido") en vez de mandarlo
+al servo. PENDIENTE: volver a correrlo en físico y capturar el Monitor Serie
+(ver [Terminal/Readme.txt](Terminal/Readme.txt)).
 
 ## Video
 [Ver video](https://youtu.be/-maYry-BLSA) · [Ver carpeta Video](Video/)
