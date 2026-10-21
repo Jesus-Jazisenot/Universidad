@@ -57,8 +57,6 @@ APAGADO). En el video, los cables del motor se sostienen con la mano porque
 no quedaron fijos en la clema del L298N.
 En la captura no aparece ninguna orden rechazada por el tiempo mínimo de 1 s.
 
-![Monitor Serie](Terminal/monitor-serie-comandos.jpeg)
-
 ## Video
 El video muestra el código, el Monitor Serie y el LED y el motor respondiendo
 a los comandos.
