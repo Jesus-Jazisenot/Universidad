@@ -54,7 +54,7 @@ PENDIENTE: probar en físico las dos pruebas de seguridad (M1/M0 seguidos y
 RESET con el motor encendido) y anotar aquí lo observado.
 
 ## Video
-PENDIENTE: video del funcionamiento.
+[Ver video](https://youtube.com/shorts/bL3LOrrr8CQ?si=GWq1_DvsiS2-Gj1C)
 
 [Ver carpeta Video](Video/)
 
