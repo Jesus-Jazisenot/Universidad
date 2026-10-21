@@ -1,148 +1,151 @@
-// Practica 4.1.1-A - Driver de software para un relevador
-// Arduino UNO R4 WiFi
-//
-// Una sola clase (Relevador) controla dos actuadores distintos:
-//   - Motor: canal A del L298N, IN1 en D7, ACTIVO EN ALTO
-//   - LED:   anodo a 5V, catodo -> 220 ohm -> D6, ACTIVO EN BAJO
-//             (imita al optoacoplador de un modulo de relevador real)
-//
-// Comandos por el Monitor Serie (115200 baudios, cualquier fin de linea):
-//   M1 / M0  encender / apagar el motor
-//   L1 / L0  encender / apagar el LED
-//   E        estado de ambos
-//
-// Reglas: el programa principal nunca usa digitalWrite(); todo pasa por
-// la clase. Sin delay(). Entre dos cambios de un mismo relevador debe
-// pasar al menos 1000 ms; si una orden se rechaza, el pin no cambia.
+/*
+  Practica 4.1.1-A  Driver de software para un relevador
+  Placa: Arduino UNO R4 WiFi
 
-// (PIN_LED ya existe en el core de la R4: es el LED de la placa, D13)
-const uint8_t PIN_MOTOR_IN1 = 7;
-const uint8_t PIN_LED_OPTO = 6;
-const unsigned long TIEMPO_MINIMO_MS = 1000;
+  Una sola clase controla dos actuadores con logica opuesta:
+    Motor por L298N (D7) -> activo en ALTO
+    LED al reves  (D6)   -> activo en BAJO
+
+  Comandos del Monitor Serie (9600, con "Nueva linea"):
+    M1 / M0  encender o apagar el motor
+    L1 / L0  encender o apagar el LED
+    E        mostrar el estado de ambos
+
+  Sin delay(). El programa principal nunca llama digitalWrite().
+*/
 
 class Relevador {
-public:
-  Relevador(uint8_t pin, bool activoEnBajo, unsigned long tiempoMinimo)
-    : pin_(pin), activoEnBajo_(activoEnBajo), encendido_(false),
-      ultimoCambio_(0), tiempoMinimo_(tiempoMinimo) {}
+  public:
+    Relevador(uint8_t pin, bool activoEnBajo, uint32_t tMinimo = 1000)
+      : _pin(pin),
+        _activoEnBajo(activoEnBajo),
+        _tMinimo(tMinimo),
+        _encendido(false),
+        _ultimoCambio(0) {}
 
-  // Estado seguro: se escribe el nivel de APAGADO antes de volver el pin
-  // salida, asi el actuador no da ni un pulso al arrancar o tras un RESET.
-  // El arranque cuenta como un cambio: la primera orden espera 1 s.
-  void iniciar() {
-    encendido_ = false;
-    escribirPin(false);
-    pinMode(pin_, OUTPUT);
-    escribirPin(false);
-    ultimoCambio_ = millis();
-  }
+    void iniciar() {
+      // Se escribe el nivel de APAGADO antes de volver el pin salida.
+      // Si no, el pin arranca en LOW y un actuador activo en bajo
+      // daria un pulso de encendido durante el arranque.
+      digitalWrite(_pin, _nivelPara(false));
+      pinMode(_pin, OUTPUT);
+      digitalWrite(_pin, _nivelPara(false));
 
-  bool encender() { return cambiar(true); }
-  bool apagar() { return cambiar(false); }
-  bool estaEncendido() const { return encendido_; }
+      _encendido    = false;
+      _ultimoCambio = millis();
+    }
 
-  // Milisegundos que faltan para aceptar otro cambio (0 = ya se puede).
-  unsigned long tiempoRestante() const {
-    unsigned long transcurrido = millis() - ultimoCambio_;
-    return transcurrido >= tiempoMinimo_ ? 0 : tiempoMinimo_ - transcurrido;
-  }
+    bool encender() { return _cambiarA(true);  }
+    bool apagar()   { return _cambiarA(false); }
 
-private:
-  bool cambiar(bool nuevo) {
-    if (nuevo == encendido_) return true;   // ya estaba asi: no hay conmutacion
-    if (tiempoRestante() > 0) return false; // muy pronto: el pin no se toca
-    encendido_ = nuevo;
-    escribirPin(nuevo);
-    ultimoCambio_ = millis();
-    return true;
-  }
+    bool estaEncendido() const { return _encendido; }
 
-  // Unico lugar donde se decide HIGH o LOW.
-  void escribirPin(bool encendido) {
-    bool nivel = activoEnBajo_ ? !encendido : encendido;
-    digitalWrite(pin_, nivel ? HIGH : LOW);
-  }
+    // Cuanto falta para poder conmutar otra vez
+    uint32_t faltaMs() const {
+      uint32_t t = millis() - _ultimoCambio;
+      return (t >= _tMinimo) ? 0 : (_tMinimo - t);
+    }
 
-  const uint8_t pin_;
-  const bool activoEnBajo_;
-  bool encendido_;
-  unsigned long ultimoCambio_;
-  const unsigned long tiempoMinimo_;
+  private:
+    const uint8_t  _pin;
+    const bool     _activoEnBajo;
+    const uint32_t _tMinimo;
+
+    bool     _encendido;
+    uint32_t _ultimoCambio;
+
+    // Aqui vive toda la traduccion activo-alto / activo-bajo
+    uint8_t _nivelPara(bool encendido) const {
+      return (encendido != _activoEnBajo) ? HIGH : LOW;
+    }
+
+    bool _cambiarA(bool destino) {
+      if (_encendido == destino) return true;   // ya esta ahi, no conmuta
+
+      if (millis() - _ultimoCambio < _tMinimo) return false;  // rechazada
+
+      digitalWrite(_pin, _nivelPara(destino));
+      _encendido    = destino;
+      _ultimoCambio = millis();
+      return true;
+    }
 };
 
-Relevador motor(PIN_MOTOR_IN1, false, TIEMPO_MINIMO_MS);  // activo en alto
-Relevador led(PIN_LED_OPTO, true, TIEMPO_MINIMO_MS);       // activo en bajo
+// ---------------------------------------------------
 
-char letraPendiente = 0;  // 'M' o 'L' esperando su 0/1
+Relevador motor(7, false);   // L298N IN1 - activo en ALTO
+Relevador led  (6, true);    // LED al reves - activo en BAJO
 
-void setup() {
-  motor.iniciar();  // primero los actuadores: estado seguro antes que nada
-  led.iniciar();
+char    linea[8];
+uint8_t n = 0;
 
-  Serial.begin(115200);
-  unsigned long t0 = millis();
-  while (!Serial && millis() - t0 < 2000) {}  // espera al USB sin bloquear de mas
+// ---------------------------------------------------
 
-  Serial.println();
-  Serial.println("Driver de relevador listo. Motor y LED APAGADOS (estado seguro).");
-  Serial.println("Comandos: M1/M0 motor, L1/L0 LED, E estado.");
-}
-
-void loop() {
-  while (Serial.available() > 0) {
-    procesarCaracter(Serial.read());
-  }
-}
-
-void procesarCaracter(char c) {
-  if (c >= 'a' && c <= 'z') c -= 'a' - 'A';
-  if (c == '\r' || c == '\n' || c == ' ') return;
-
-  if (letraPendiente != 0) {
-    char letra = letraPendiente;
-    letraPendiente = 0;
-    if (c == '0' || c == '1') {
-      if (letra == 'M') ejecutar(motor, "Motor", c == '1');
-      else ejecutar(led, "LED", c == '1');
-      return;
-    }
-    Serial.print("Comando no reconocido: ");
-    Serial.println(letra);
-  }
-
-  if (c == 'M' || c == 'L') {
-    letraPendiente = c;
-  } else if (c == 'E') {
-    mostrarEstado();
-  } else {
-    Serial.print("Comando no reconocido: ");
-    Serial.println(c);
-  }
-}
-
-void ejecutar(Relevador &r, const char *nombre, bool encender) {
-  bool yaEstaba = r.estaEncendido() == encender;
-  unsigned long falta = r.tiempoRestante();
+void intentar(Relevador &r, bool encender, const char *nombre) {
   bool ok = encender ? r.encender() : r.apagar();
 
-  if (!ok) {
-    Serial.print("Orden rechazada: espere 1 s entre cambios (");
+  if (ok) {
     Serial.print(nombre);
-    Serial.print(" sigue ");
-    Serial.print(r.estaEncendido() ? "ENCENDIDO" : "APAGADO");
-    Serial.print(", faltan ");
-    Serial.print(falta);
-    Serial.println(" ms)");
-    return;
+    Serial.println(encender ? " ENCENDIDO" : " APAGADO");
+  } else {
+    Serial.print("Orden rechazada: espere ");
+    Serial.print(r.faltaMs());
+    Serial.println(" ms entre cambios");
   }
-  Serial.print(nombre);
-  Serial.print(yaEstaba ? " ya estaba " : " ");
-  Serial.println(r.estaEncendido() ? "ENCENDIDO" : "APAGADO");
 }
 
 void mostrarEstado() {
-  Serial.print("Estado -> Motor: ");
-  Serial.print(motor.estaEncendido() ? "ENCENDIDO" : "APAGADO");
-  Serial.print(" | LED: ");
+  Serial.println(F("--- ESTADO ---"));
+  Serial.print(F("Motor: "));
+  Serial.println(motor.estaEncendido() ? "ENCENDIDO" : "APAGADO");
+  Serial.print(F("LED:   "));
   Serial.println(led.estaEncendido() ? "ENCENDIDO" : "APAGADO");
+  Serial.println();
+}
+
+void procesar(const char *cmd) {
+  if      (!strcmp(cmd, "M1")) intentar(motor, true,  "Motor");
+  else if (!strcmp(cmd, "M0")) intentar(motor, false, "Motor");
+  else if (!strcmp(cmd, "L1")) intentar(led,   true,  "LED");
+  else if (!strcmp(cmd, "L0")) intentar(led,   false, "LED");
+  else if (!strcmp(cmd, "E" )) mostrarEstado();
+  else {
+    Serial.print(F("Comando desconocido: "));
+    Serial.println(cmd);
+  }
+}
+
+void leerSerie() {
+  while (Serial.available()) {
+    char c = Serial.read();
+
+    if (c == '\n' || c == '\r') {
+      if (n > 0) {
+        linea[n] = '\0';
+        procesar(linea);
+        n = 0;
+      }
+    }
+    else if (n < sizeof(linea) - 1) {
+      linea[n++] = toupper(c);
+    }
+  }
+}
+
+// ---------------------------------------------------
+
+void setup() {
+  Serial.begin(9600);
+  while (!Serial && millis() < 3000);
+
+  motor.iniciar();      // estado seguro: ambos apagados
+  led.iniciar();
+
+  Serial.println(F("Driver de relevador listo"));
+  Serial.println(F("Comandos: M1 M0 L1 L0 E"));
+  Serial.println();
+}
+
+void loop() {
+  leerSerie();          // unica tarea, nunca bloquea
 }

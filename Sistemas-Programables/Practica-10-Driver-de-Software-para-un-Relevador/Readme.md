@@ -21,7 +21,7 @@ optoacoplador de un módulo de relevador (activo en bajo).
 - Módulo puente H L298N y motorreductor DC tipo TT
 - 2 pilas 18650 en serie (≈ 7.4 V) para el motor
 - LED y resistencia de 220 Ω, protoboard y jumpers
-- Arduino IDE y Monitor Serie (115200 baudios)
+- Arduino IDE y Monitor Serie (9600 baudios)
 
 ## Diagrama
 D7 → IN1 del L298N (IN2 a GND, jumpers de ENA y 5V-EN puestos), pilas a
@@ -33,11 +33,11 @@ D7 → IN1 del L298N (IN2 a GND, jumpers de ENA y 5V-EN puestos), pilas a
 ![Diagrama de estados](Diagrama/diagrama-estados-relevador.png)
 
 ## Código
-`DriverRelevador.ino`: la clase `Relevador` con `iniciar()`, `encender()`,
-`apagar()` y `estaEncendido()`; dos objetos, `motor(7, activo en alto)` y
-`led(6, activo en bajo)`. Comandos `M1`/`M0`, `L1`/`L0` y `E`; cada orden
-responde con un mensaje y las que llegan antes de 1 s se rechazan sin tocar
-el pin.
+`DriverRelevador.ino` (código del equipo): la clase `Relevador` con
+`iniciar()`, `encender()`, `apagar()`, `estaEncendido()` y `faltaMs()`; dos
+objetos, `motor(7, activo en alto)` y `led(6, activo en bajo)`. Comandos
+`M1`/`M0`, `L1`/`L0` y `E` por el Monitor Serie (9600, "Nueva línea"); las
+órdenes que llegan antes de 1 s se rechazan sin tocar el pin.
 Detalles en [Codigo/Readme.txt](Codigo/Readme.txt).
 
 [Ver código](Codigo/)
