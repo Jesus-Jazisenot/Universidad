@@ -1,8 +1,9 @@
 Resultados de la practica.
 
 Los resultados van escritos en la seccion "Resultados" del Readme.md principal
-y en el Reporte (acuerdo del profesor, "el readme.md es un glosario, no
-biblia"). Evidencia: capturas en Terminal/ y el video.
+y en el Reporte. Evidencia: capturas en Terminal/ y el video.
 
-PENDIENTE: prueba de seguridad 1 (M1 y M0 seguidos -> orden rechazada) y
-prueba de seguridad 2 (RESET con el motor encendido -> todo apagado).
+  montaje-fisico.jpeg - Foto del montaje real: UNO R4 WiFi, L298N,
+    motorreductor y LED con su resistencia en la protoboard.
+
+PENDIENTE: prueba del tiempo minimo (M1 y M0 seguidos -> orden rechazada).

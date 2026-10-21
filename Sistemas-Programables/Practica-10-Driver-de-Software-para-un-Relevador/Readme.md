@@ -50,13 +50,20 @@ inversión, las 6 preguntas de reflexión y conclusiones.
 [Ver Reporte](Reporte/Reporte-Driver-Relevador.pdf)
 
 ## Resultados
-PENDIENTE: probar en físico las dos pruebas de seguridad (M1/M0 seguidos y
-RESET con el motor encendido) y anotar aquí lo observado.
+Los comandos respondieron en físico: `L1`/`L0` encendieron y apagaron el LED,
+`M1`/`M0` el motorreductor, y `E` reportó el estado de ambos de acuerdo con la
+última orden ("Motor: ENCENDIDO / LED: ENCENDIDO" y, tras apagarlos, los dos
+APAGADO). En el video, los cables del motor se sostienen con la mano porque
+no quedaron fijos en la clema del L298N.
+En la captura no aparece ninguna orden rechazada por el tiempo mínimo de 1 s.
+
+![Monitor Serie](Terminal/monitor-serie-comandos.jpeg)
 
 ## Video
-[Ver video](https://youtube.com/shorts/bL3LOrrr8CQ?si=GWq1_DvsiS2-Gj1C)
+El video muestra el código, el Monitor Serie y el LED y el motor respondiendo
+a los comandos.
 
-[Ver carpeta Video](Video/)
+[Ver video](https://youtube.com/shorts/bL3LOrrr8CQ) · [Ver carpeta Video](Video/)
 
 ## Conclusiones
 Con el relevador modelado como clase, el programa habla con órdenes que
