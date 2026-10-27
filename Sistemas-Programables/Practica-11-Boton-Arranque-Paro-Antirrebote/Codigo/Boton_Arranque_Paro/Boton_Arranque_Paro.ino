@@ -1,47 +1,47 @@
 /*
-  Practica 4.1.2: Boton de arranque/paro a prueba de rebotes y apagones.
-  Arduino UNO R4 WiFi + modulo puente H L298N + motorreductor + pulsador.
+  Practica 4.1.2: Control de arranque y paro con un boton, protegido contra rebotes y cortes de energia.
+  Placa Arduino UNO R4 WiFi, puente H L298N, motorreductor y pulsador.
 
-  Motor:  D9 (PWM) -> ENA del L298N (jumper ENA quitado); D7 -> IN1; IN2 a GND.
-  Boton:  una pata a D2 y la opuesta a GND (INPUT_PULLUP, sin resistencia).
-  Potencia: 2 pilas 18650 en serie a +12V y GND del L298N; jumper 5V-EN puesto.
-  GND del L298N unido al GND del Arduino (tierra comun obligatoria).
+  Motor:  D9 (PWM) -> ENA del L298N (sin jumper ENA); D7 -> IN1; IN2 conectado a GND.
+  Boton:  un extremo a D2 y el contrario a GND (INPUT_PULLUP, no lleva resistencia).
+  Potencia: dos baterias 18650 en serie a +12V y GND del L298N; jumper 5V-EN colocado.
+  El GND del L298N va al GND del Arduino (la tierra compartida es indispensable).
 
-  Una pulsacion arranca el motor con rampa (0 a 255 en 1.5 s); la siguiente lo para de inmediato.
-  Defensas:
-    - Rebote: la clase Boton solo acepta un cambio que se queda quieto 25 ms (filtro con millis()).
-    - Apagon: setup() deja el motor apagado antes que nada, avisa el reinicio en la matriz LED
-      y en el Monitor Serie, y el motor solo arranca con una pulsacion nueva.
+  Al presionar una vez el motor arranca con rampa (0 a 255 en 1.5 s); al presionar otra vez se detiene al instante.
+  Protecciones:
+    - Rebote: la clase Boton solo valida un cambio que permanece estable 25 ms (filtro basado en millis()).
+    - Corte de energia: lo primero que hace setup() es apagar el motor, indica el reinicio en la matriz LED
+      y en el Monitor Serie, y el motor solo vuelve a encender con una pulsacion nueva.
 
-  Comandos por el Monitor Serie (115200 baudios, cualquier ajuste de linea):
-    V n   cambia la ventana del filtro a n ms (para la prueba de 2, 25 y 300 ms)
-    C     pone el contador de pulsaciones en 0
-    G     alterna el arranque entre rampa y golpe (PWM directo a 255), para compararlos
+  Comandos disponibles en el Monitor Serie (115200 baudios, con o sin ajuste de linea):
+    V n   ajusta la ventana del filtro a n ms (sirve para probar 2, 25 y 300 ms)
+    C     reinicia a 0 el contador de pulsaciones
+    G     cambia entre arranque con rampa y arranque directo (PWM a 255), para compararlos
 
-  No utiliza delay().
+  El programa no usa delay().
 */
 
 #include <Arduino_LED_Matrix.h>
 
 const uint8_t PIN_BOTON = 2;
 const uint8_t PIN_IN1 = 7;
-const uint8_t PIN_ENA = 9;                 // PWM: velocidad del motor.
-const uint32_t VENTANA_MS = 25;            // Tiempo que la senal debe quedarse quieta.
-const uint32_t RAMPA_MS = 1500;            // De 0 a 255 en este tiempo.
-const uint32_t AVISO_MS = 3000;            // Cuanto dura el aviso de reinicio en la matriz.
-const uint32_t FIN_DE_ORDEN_MS = 50;       // Silencio que cierra una orden sin fin de linea.
+const uint8_t PIN_ENA = 9;                 // PWM que controla la velocidad del motor.
+const uint32_t VENTANA_MS = 25;            // Tiempo que la senal debe mantenerse estable.
+const uint32_t RAMPA_MS = 1500;            // Duracion de la rampa de 0 a 255.
+const uint32_t AVISO_MS = 3000;            // Duracion del aviso de reinicio en la matriz.
+const uint32_t FIN_DE_ORDEN_MS = 50;       // Pausa que da por terminada una orden sin fin de linea.
 const uint8_t LARGO_ORDEN = 12;
 
 
-// ---------------------------------------------------------------- Filtro de rebotes
+// ---------------------------------------------------------------- Filtro antirrebote
 class Boton {
   public:
     Boton(uint8_t pin, uint32_t ventana = VENTANA_MS)
       : pin_(pin), lecturaAnterior_(HIGH), estadoAceptado_(HIGH),
         ultimoCambio_(0), ventana_(ventana), huboPulsacion_(false) {}
 
-    // Si el boton ya esta oprimido al arrancar, se toma como el estado de partida:
-    // asi un dedo que se quedo en el boton durante el reinicio no arranca el motor.
+    // La lectura al arrancar se usa como estado inicial: si el boton ya estaba
+    // presionado durante el reinicio, eso no cuenta como pulsacion y el motor no enciende.
     void iniciar() {
       pinMode(pin_, INPUT_PULLUP);
       lecturaAnterior_ = estadoAceptado_ = digitalRead(pin_);
@@ -53,18 +53,18 @@ class Boton {
       uint8_t lectura = digitalRead(pin_);
       uint32_t ahora = millis();
       if (lectura != lecturaAnterior_) {
-        ultimoCambio_ = ahora;                // Cada rebote reinicia el cronometro.
+        ultimoCambio_ = ahora;                // Cualquier rebote vuelve a poner el cronometro en cero.
       }
       if (ahora - ultimoCambio_ >= ventana_ && lectura != estadoAceptado_) {
         estadoAceptado_ = lectura;
         if (estadoAceptado_ == LOW) {
-          huboPulsacion_ = true;              // Solo cuenta el paso de suelto a oprimido.
+          huboPulsacion_ = true;              // Solo se registra la transicion de suelto a presionado.
         }
       }
       lecturaAnterior_ = lectura;
     }
 
-    // Entrega cada pulsacion real una sola vez.
+    // Devuelve cada pulsacion real una unica vez.
     bool fuePresionado() {
       if (huboPulsacion_) {
         huboPulsacion_ = false;
@@ -105,7 +105,7 @@ void escribirPwm(uint8_t valor) {
   analogWrite(PIN_ENA, pwm);
 }
 
-void pararMotor() {                        // Paro inmediato.
+void pararMotor() {                        // Detiene el motor al instante.
   escribirPwm(0);
   digitalWrite(PIN_IN1, LOW);
   estado = APAGADO;
@@ -118,12 +118,12 @@ void arrancarMotor() {
     escribirPwm(0);
     estado = ARRANCANDO;
   } else {
-    escribirPwm(255);                      // De golpe: solo para comparar.
+    escribirPwm(255);                      // Arranque directo: solo para comparar.
     estado = ENCENDIDO;
   }
 }
 
-// Sube el PWM en proporcion al tiempo transcurrido desde que empezo la rampa.
+// Aumenta el PWM segun el tiempo que ha pasado desde el inicio de la rampa.
 void actualizarRampa() {
   if (estado != ARRANCANDO) {
     return;
@@ -143,7 +143,7 @@ void actualizarRampa() {
 
 
 // ---------------------------------------------------------------- Matriz LED
-// Letras de 3x5; cada fila es un numero de 3 bits (el bit mas alto es la columna izquierda).
+// Letras de 3x5 pixeles; cada fila se guarda en 3 bits (el bit mayor corresponde a la columna izquierda).
 const uint8_t LETRA_R[5] = {0b110, 0b101, 0b110, 0b101, 0b101};
 const uint8_t LETRA_S[5] = {0b011, 0b100, 0b010, 0b001, 0b110};
 const uint8_t LETRA_T[5] = {0b111, 0b010, 0b010, 0b010, 0b010};
@@ -158,7 +158,7 @@ void ponerLetra(uint8_t imagen[8][12], const uint8_t letra[5], uint8_t columna) 
         imagen[fila + 1][columna + c] = 1;
 }
 
-void mostrarAviso() {                      // "RST": el sistema se reinicio.
+void mostrarAviso() {                      // Muestra "RST" para indicar que hubo un reinicio.
   uint8_t imagen[8][12] = {};
   ponerLetra(imagen, LETRA_R, 1);
   ponerLetra(imagen, LETRA_S, 5);
@@ -166,12 +166,12 @@ void mostrarAviso() {                      // "RST": el sistema se reinicio.
   matriz.renderBitmap(imagen, 8, 12);
 }
 
-// "ON" u "OFF" y, en la fila de abajo, una barra con la velocidad (sube durante la rampa).
+// Muestra "ON" u "OFF" y, en la fila inferior, una barra de velocidad que crece durante la rampa.
 void mostrarEstadoMotor() {
   static int ultimo = -1;
   int actual = (estado == APAGADO) ? -2 : pwm * 12 / 256;
   if (actual == ultimo) {
-    return;                                // Sin cambios: no se redibuja.
+    return;                                // Si nada cambio, no se vuelve a dibujar.
   }
   ultimo = actual;
   uint8_t imagen[8][12] = {};
@@ -241,8 +241,8 @@ void cerrarOrden() {
   largo = 0;
 }
 
-// Junta los caracteres sin bloquear. La orden termina con fin de linea o, si el monitor
-// no lo manda ("Sin ajuste de linea"), tras 50 ms sin recibir caracteres.
+// Acumula los caracteres sin bloquear. Una orden termina con fin de linea o, cuando el monitor
+// no lo envia ("Sin ajuste de linea"), despues de 50 ms sin recibir nada.
 void leerSerie() {
   while (Serial.available() > 0) {
     char c = (char)Serial.read();
@@ -261,7 +261,7 @@ void leerSerie() {
 
 // ---------------------------------------------------------------- Programa principal
 void setup() {
-  // PRIMERA ACCION: motor apagado (PWM en 0 e IN1 en LOW), pase lo que pase antes del reinicio.
+  // LO PRIMERO: apagar el motor (PWM en 0 e IN1 en LOW), sin importar lo que pasaba antes del reinicio.
   digitalWrite(PIN_ENA, LOW);
   digitalWrite(PIN_IN1, LOW);
   pinMode(PIN_ENA, OUTPUT);
@@ -276,7 +276,7 @@ void setup() {
   Serial.begin(115200);
   uint32_t inicio = millis();
   while (!Serial && millis() - inicio < 2000) {
-    // Espera al Monitor Serie hasta 2 s, sin delay(); el motor ya esta apagado.
+    // Espera hasta 2 s a que abra el Monitor Serie, sin delay(); el motor ya esta detenido.
   }
   Serial.println();
   Serial.println("*** SISTEMA REINICIADO ***");

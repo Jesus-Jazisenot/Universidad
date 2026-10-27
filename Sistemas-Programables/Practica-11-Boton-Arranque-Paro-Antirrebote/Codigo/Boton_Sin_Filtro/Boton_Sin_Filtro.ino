@@ -1,17 +1,17 @@
 /*
-  Practica 4.1.2 (paso 2 del desarrollo): version SIN filtro de rebotes.
-  Arduino UNO R4 WiFi + modulo puente H L298N + motorreductor + pulsador.
+  Practica 4.1.2 (paso 2 del desarrollo): version SIN filtro antirrebote.
+  Placa Arduino UNO R4 WiFi, puente H L298N, motorreductor y pulsador.
 
-  Mismas conexiones que Boton_Arranque_Paro: D9 -> ENA, D7 -> IN1, IN2 a GND, boton entre D2 y GND.
+  Se conecta igual que Boton_Arranque_Paro: D9 -> ENA, D7 -> IN1, IN2 a GND, boton entre D2 y GND.
 
-  Lee el boton directamente: cada paso de HIGH (suelto) a LOW (oprimido) que ve el Arduino
-  cuenta como pulsacion y cambia el motor, incluidos los rebotes. Sirve para la prueba de
-  rebote: oprimir 10 veces despacio y comparar con lo que marca el contador.
+  Lee el boton sin filtrar: toda transicion de HIGH (suelto) a LOW (presionado) que detecta
+  el Arduino se toma como pulsacion y cambia el motor, rebotes incluidos. Se usa en la prueba
+  de rebote: presionar 10 veces con calma y comparar contra lo que indica el contador.
 
-  Comandos por el Monitor Serie (115200 baudios, con ajuste de linea):
-    C     pone el contador en 0 (antes de cada intento)
+  Comando disponible en el Monitor Serie (115200 baudios, con ajuste de linea):
+    C     reinicia el contador a 0 (antes de cada intento)
 
-  No utiliza delay().
+  El programa no usa delay().
 */
 
 const uint8_t PIN_BOTON = 2;
@@ -29,7 +29,7 @@ void escribirMotor(bool encender) {
 }
 
 void setup() {
-  digitalWrite(PIN_ENA, LOW);                // Motor apagado antes que nada.
+  digitalWrite(PIN_ENA, LOW);                // Lo primero: motor apagado.
   digitalWrite(PIN_IN1, LOW);
   pinMode(PIN_ENA, OUTPUT);
   pinMode(PIN_IN1, OUTPUT);
@@ -40,7 +40,7 @@ void setup() {
   Serial.begin(115200);
   uint32_t inicio = millis();
   while (!Serial && millis() - inicio < 2000) {
-    // Espera al Monitor Serie hasta 2 s, sin delay().
+    // Espera hasta 2 s a que abra el Monitor Serie, sin delay().
   }
   Serial.println();
   Serial.println("Practica 4.1.2: version SIN filtro de rebotes");
@@ -49,7 +49,7 @@ void setup() {
 
 void loop() {
   uint8_t lectura = digitalRead(PIN_BOTON);
-  if (lecturaAnterior == HIGH && lectura == LOW) {   // Suelto -> oprimido (sin filtrar).
+  if (lecturaAnterior == HIGH && lectura == LOW) {   // De suelto a presionado (sin filtro).
     pulsaciones++;
     escribirMotor(!motorEncendido);
     Serial.print("Pulsaciones contadas: ");

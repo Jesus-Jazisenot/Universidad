@@ -1,51 +1,51 @@
 /*
-  Practica 4.1.2: Boton de arranque/paro a prueba de rebotes y apagones.
-  VERSION PARA TINKERCAD: Arduino UNO R3 + puente H L293D + motor DC + pulsador + LCD 16x2 (I2C).
-  Tinkercad no tiene el UNO R4 (ni su matriz LED) ni el modulo L298N: la matriz se cambia
-  por la LCD y el L298N por el L293D, que se controla igual (EN con PWM, IN1 e IN2).
+  Practica 4.1.2: Control de arranque y paro con un boton, protegido contra rebotes y cortes de energia.
+  ADAPTACION PARA TINKERCAD: Arduino UNO R3, puente H L293D, motor de CD, pulsador y LCD 16x2 (I2C).
+  Como Tinkercad no incluye el UNO R4 (ni su matriz LED) ni el modulo L298N, la matriz se
+  sustituye por la LCD y el L298N por el L293D, que se maneja igual (EN con PWM, IN1 e IN2).
 
-  Motor:  D9 (PWM) -> EN1,2 (pata 1 del L293D); D7 -> IN1 (pata 2); IN2 (pata 7) a GND.
-          Motor entre OUT1 (pata 3) y OUT2 (pata 6). Patas 4, 5, 12 y 13 a GND.
-  Boton:  una pata a D2 y la opuesta a GND (INPUT_PULLUP, sin resistencia).
+  Motor:  D9 (PWM) -> EN1,2 (pin 1 del L293D); D7 -> IN1 (pin 2); IN2 (pin 7) a GND.
+          Motor conectado entre OUT1 (pin 3) y OUT2 (pin 6). Pines 4, 5, 12 y 13 a GND.
+  Boton:  un extremo a D2 y el contrario a GND (INPUT_PULLUP, no lleva resistencia).
   LCD:    GND, VCC a 5V, SDA a A4, SCL a A5.
-  Potencia: pila de 9 V a VCC2 (pata 8) del L293D; VCC1 (pata 16) a 5V del Arduino.
-  Negativo de la pila unido al GND del Arduino (tierra comun obligatoria).
+  Potencia: bateria de 9 V a VCC2 (pin 8) del L293D; VCC1 (pin 16) a 5V del Arduino.
+  El negativo de la bateria va al GND del Arduino (la tierra compartida es indispensable).
 
-  Una pulsacion arranca el motor con rampa (0 a 255 en 1.5 s); la siguiente lo para de inmediato.
-  Defensas:
-    - Rebote: la clase Boton solo acepta un cambio que se queda quieto 25 ms (filtro con millis()).
-    - Apagon: setup() deja el motor apagado antes que nada, avisa el reinicio en la LCD
-      y en el Monitor Serie, y el motor solo arranca con una pulsacion nueva.
+  Al presionar una vez el motor arranca con rampa (0 a 255 en 1.5 s); al presionar otra vez se detiene al instante.
+  Protecciones:
+    - Rebote: la clase Boton solo valida un cambio que permanece estable 25 ms (filtro basado en millis()).
+    - Corte de energia: lo primero que hace setup() es apagar el motor, indica el reinicio en la LCD
+      y en el Monitor Serie, y el motor solo vuelve a encender con una pulsacion nueva.
 
-  Comandos por el Monitor Serie (115200 baudios, cualquier ajuste de linea):
-    V n   cambia la ventana del filtro a n ms (para la prueba de 2, 25 y 300 ms)
-    C     pone el contador de pulsaciones en 0
-    G     alterna el arranque entre rampa y golpe (PWM directo a 255), para compararlos
+  Comandos disponibles en el Monitor Serie (115200 baudios, con o sin ajuste de linea):
+    V n   ajusta la ventana del filtro a n ms (sirve para probar 2, 25 y 300 ms)
+    C     reinicia a 0 el contador de pulsaciones
+    G     cambia entre arranque con rampa y arranque directo (PWM a 255), para compararlos
 
-  No utiliza delay().
+  El programa no usa delay().
 */
 
 #include <Adafruit_LiquidCrystal.h>
 
 const uint8_t PIN_BOTON = 2;
 const uint8_t PIN_IN1 = 7;
-const uint8_t PIN_ENA = 9;                 // PWM: velocidad del motor.
-const uint32_t VENTANA_MS = 25;            // Tiempo que la senal debe quedarse quieta.
-const uint32_t RAMPA_MS = 1500;            // De 0 a 255 en este tiempo.
-const uint32_t AVISO_MS = 3000;            // Cuanto dura el aviso de reinicio en la LCD.
-const uint32_t FIN_DE_ORDEN_MS = 50;       // Silencio que cierra una orden sin fin de linea.
+const uint8_t PIN_ENA = 9;                 // PWM que controla la velocidad del motor.
+const uint32_t VENTANA_MS = 25;            // Tiempo que la senal debe mantenerse estable.
+const uint32_t RAMPA_MS = 1500;            // Duracion de la rampa de 0 a 255.
+const uint32_t AVISO_MS = 3000;            // Duracion del aviso de reinicio en la LCD.
+const uint32_t FIN_DE_ORDEN_MS = 50;       // Pausa que da por terminada una orden sin fin de linea.
 const uint8_t LARGO_ORDEN = 12;
 
 
-// ---------------------------------------------------------------- Filtro de rebotes
+// ---------------------------------------------------------------- Filtro antirrebote
 class Boton {
   public:
     Boton(uint8_t pin, uint32_t ventana = VENTANA_MS)
       : pin_(pin), lecturaAnterior_(HIGH), estadoAceptado_(HIGH),
         ultimoCambio_(0), ventana_(ventana), huboPulsacion_(false) {}
 
-    // Si el boton ya esta oprimido al arrancar, se toma como el estado de partida:
-    // asi un dedo que se quedo en el boton durante el reinicio no arranca el motor.
+    // La lectura al arrancar se usa como estado inicial: si el boton ya estaba
+    // presionado durante el reinicio, eso no cuenta como pulsacion y el motor no enciende.
     void iniciar() {
       pinMode(pin_, INPUT_PULLUP);
       lecturaAnterior_ = estadoAceptado_ = digitalRead(pin_);
@@ -57,18 +57,18 @@ class Boton {
       uint8_t lectura = digitalRead(pin_);
       uint32_t ahora = millis();
       if (lectura != lecturaAnterior_) {
-        ultimoCambio_ = ahora;                // Cada rebote reinicia el cronometro.
+        ultimoCambio_ = ahora;                // Cualquier rebote vuelve a poner el cronometro en cero.
       }
       if (ahora - ultimoCambio_ >= ventana_ && lectura != estadoAceptado_) {
         estadoAceptado_ = lectura;
         if (estadoAceptado_ == LOW) {
-          huboPulsacion_ = true;              // Solo cuenta el paso de suelto a oprimido.
+          huboPulsacion_ = true;              // Solo se registra la transicion de suelto a presionado.
         }
       }
       lecturaAnterior_ = lectura;
     }
 
-    // Entrega cada pulsacion real una sola vez.
+    // Devuelve cada pulsacion real una unica vez.
     bool fuePresionado() {
       if (huboPulsacion_) {
         huboPulsacion_ = false;
@@ -109,7 +109,7 @@ void escribirPwm(uint8_t valor) {
   analogWrite(PIN_ENA, pwm);
 }
 
-void pararMotor() {                        // Paro inmediato.
+void pararMotor() {                        // Detiene el motor al instante.
   escribirPwm(0);
   digitalWrite(PIN_IN1, LOW);
   estado = APAGADO;
@@ -122,12 +122,12 @@ void arrancarMotor() {
     escribirPwm(0);
     estado = ARRANCANDO;
   } else {
-    escribirPwm(255);                      // De golpe: solo para comparar.
+    escribirPwm(255);                      // Arranque directo: solo para comparar.
     estado = ENCENDIDO;
   }
 }
 
-// Sube el PWM en proporcion al tiempo transcurrido desde que empezo la rampa.
+// Aumenta el PWM segun el tiempo que ha pasado desde el inicio de la rampa.
 void actualizarRampa() {
   if (estado != ARRANCANDO) {
     return;
@@ -146,7 +146,7 @@ void actualizarRampa() {
 }
 
 
-// ---------------------------------------------------------------- LCD (en lugar de la matriz)
+// ---------------------------------------------------------------- LCD (sustituye a la matriz)
 void mostrarAviso() {
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -155,13 +155,13 @@ void mostrarAviso() {
   lcd.print("  REINICIADO");
 }
 
-// Linea 1: estado del motor. Linea 2: barra con la velocidad (sube durante la rampa).
+// Renglon 1: estado del motor. Renglon 2: barra de velocidad que crece durante la rampa.
 void mostrarEstadoMotor() {
   static int ultimoEstado = -1;
   static int ultimaBarra = -1;
   int barra = (estado == APAGADO) ? 0 : (pwm * 16 + 255) / 256;
   if ((int)estado == ultimoEstado && barra == ultimaBarra) {
-    return;                                // Sin cambios: no se redibuja.
+    return;                                // Si nada cambio, no se vuelve a dibujar.
   }
   if ((int)estado != ultimoEstado) {
     lcd.clear();
@@ -230,8 +230,8 @@ void cerrarOrden() {
   largo = 0;
 }
 
-// Junta los caracteres sin bloquear. La orden termina con fin de linea o, si el monitor
-// no lo manda (Tinkercad), tras 50 ms sin recibir caracteres.
+// Acumula los caracteres sin bloquear. Una orden termina con fin de linea o, cuando el monitor
+// no lo envia (Tinkercad), despues de 50 ms sin recibir nada.
 void leerSerie() {
   while (Serial.available() > 0) {
     char c = (char)Serial.read();
@@ -250,7 +250,7 @@ void leerSerie() {
 
 // ---------------------------------------------------------------- Programa principal
 void setup() {
-  // PRIMERA ACCION: motor apagado (PWM en 0 e IN1 en LOW), pase lo que pase antes del reinicio.
+  // LO PRIMERO: apagar el motor (PWM en 0 e IN1 en LOW), sin importar lo que pasaba antes del reinicio.
   digitalWrite(PIN_ENA, LOW);
   digitalWrite(PIN_IN1, LOW);
   pinMode(PIN_ENA, OUTPUT);
@@ -266,7 +266,7 @@ void setup() {
   Serial.begin(115200);
   uint32_t inicio = millis();
   while (!Serial && millis() - inicio < 2000) {
-    // Espera al Monitor Serie hasta 2 s, sin delay(); el motor ya esta apagado.
+    // Espera hasta 2 s a que abra el Monitor Serie, sin delay(); el motor ya esta detenido.
   }
   Serial.println();
   Serial.println("*** SISTEMA REINICIADO ***");
